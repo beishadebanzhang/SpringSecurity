@@ -1,0 +1,8 @@
+工作原理:
+    结构总览:
+        当初始化SpringSecurity时, 会创建名为SpringSecurityFilterChain(类名: FilterChainProxy)
+    的servlet过滤器, 外部的请求会经过该类
+        FilterChainProxy
+            --> filter1 --> Authentication Manager
+            --> filter2 --> AccessDecision Manager
+            --> system resource
