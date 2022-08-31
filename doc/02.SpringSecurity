@@ -2,7 +2,69 @@
     结构总览:
         当初始化SpringSecurity时, 会创建名为SpringSecurityFilterChain(类名: FilterChainProxy)
     的servlet过滤器, 外部的请求会经过该类
-        FilterChainProxy
-            --> filter1 --> Authentication Manager
-            --> filter2 --> AccessDecision Manager
+        FilterChainProxy: 是一个代理, 真正起作用的是其中securityFilterChain中包含的各个filter
+            --> filter1 --> Authentication Manager(认证管理器)
+            --> filter2 --> AccessDecision Manager(授权决策管理器)
             --> system resource
+        SecurityFilterChain:
+            SecurityContextPersistenceFilter:
+                    整个拦截的入口和出口, 会在请求开始时从配置好的SecurityContextRepository中获取
+                SecurityContext, 然后将其设置到SecurityContextHolder
+                    请求完成后将SecurityContextHolder持有的SecurityContext保存至配置好的
+                SecurityContextRepository中, 同时清除SecurityContextHolder持有的SecurityContext
+            UsernamePasswordAuthenticationFilter:
+                    用于处理来自表单的认证, 该表单必须提供对应的用户名和密码, 其内部还有登录成功或失败后
+                进行处理的AuthenticationSuccessHandler和AuthenticationFailureHandler
+            FilterSecurityInterceptor:
+                    用于保护web资源, 使用AccessDecisionManager对当前用户进行授权访问
+            ExceptionTranslationFilter:
+                    捕获来自FilterChain的所有异常, 只会处理AuthenticationException和AccessDeniedException
+    认证流程:
+        用户提交账号密码 --> FilterChainProxy --> SecurityFilterChain
+            --> UsernamePasswordAuthenticationFilter
+                    将请求信息封装为Authentication, 实现类为UsernamePasswordAuthenticationToken
+            --> AuthenticationManager.authenticate()
+            --> DaoAuthenticationProvider
+                    UserDetailsService.loadUserByUsername() 获取用户信息UserDetails
+                    通过PasswordEncoder对比UserDetails和Authentication中的密码是否一致
+                    填充Authentication, 如权限信息
+                    返回Authentication
+            --> AuthenticationManager
+            --> UsernamePasswordAuthenticationFilter
+            --> SecurityContextHolder
+                    getContext().setAuthentication(...)方法将Authentication保存至上下文
+        AuthenticationProvider:
+            Authentication authenticate(Authentication authentication)
+                定义了认证的实现过程, 认证成功后将用户权限等信息存入authentication并返回
+            boolean supports(Class<?> authentications)
+                Spring Security内部存放了一个List<AuthenticationProvider>列表, 存放
+            了多种认证方式, 不同认证方式使用不同的AuthenticationProvider
+                每个AuthenticationProvider需要实现supports()来表明自己支持的认证方式
+        UserDetailService: --> UserDetails loadUserByUsername(String username)
+            DaoAuthenticationProvider内部包含一个UserDetailService
+            负责根据用户名提取用户信息UserDetails(包含密码)
+            DaoAuthenticationProvider会对比UserDetails和用户提交的信息
+            可以自定义UserDetailService的实现类来自定义身份认证
+            UserDetailService只负责从特定的地方(如数据库)加载用户信息
+            DaoAuthenticationProvider负责完成完整的认证流程, 并把UserDetails填充至Authentication
+            实现类: InMemoryUserDetailsManager(基于内存)、JdbcUserDetailsManager(基于数据库)
+        PasswordEncoder:
+            DaoAuthenticationProvider通过PasswordEncoder接口的matches()进行密码的对比
+            使用方法: @Bean public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder();}
+            实现类: BCryptPasswordEncoder、Pbkdf2PasswordEncoder、SCryptPasswordEncoder等
+    授权流程:
+        认证后用户访问受保护资源
+            --> FilterSecurityInterceptor 已认证的用户访问受保护的web资源将被此类拦截请求
+                --> SecurityMetadataSource.getAttributes() 获取访问当前资源所需要的权限Collection<ConfigAttribute>
+                        SecurityMetadataSource是读取访问策略的抽象, 读取的内容就是我们配置的访问规则
+                        如: http.authorizeRequests()
+                                .anyMatchers("/r/r1").hasAuthority("p1")
+            --> FilterSecurityInterceptor
+                --> AccessDecisionManger.Decide() 决策投票
+                        AccessDecisionManger 访问决策管理器 用于鉴定当前用户是否有访问对应受保护资源的权限
+                            void decide(Authentication auth, Object obj, Collection<ConfigAttribute> attrs)
+                                auth 要访问资源者的身份
+                                obj 要访问的受保护资源, web请求对应FilterInvocation
+                                attrs 受保护资源的访问策略, 通过SecurityMetadataSource获取
+            --> 决策通过, 允许访问资源, 请求放行
+        授权决策:

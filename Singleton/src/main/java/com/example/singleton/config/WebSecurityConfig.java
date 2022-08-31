@@ -2,6 +2,7 @@ package com.example.singleton.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 
 /**
  * SpringSecurity安全配置类
@@ -10,4 +11,5 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
  */
 @Configuration // 由于spring boot的自动装配, 不需要@EnableWebSecurity, @WebSecurityConfig
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
 }
