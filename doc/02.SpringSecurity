@@ -67,4 +67,9 @@
                                 obj 要访问的受保护资源, web请求对应FilterInvocation
                                 attrs 受保护资源的访问策略, 通过SecurityMetadataSource获取
             --> 决策通过, 允许访问资源, 请求放行
-        授权决策:
+        AccessDecisionManger:
+            采用投票的方式来确定是否能够访问受保护资源, 内部包含一系列AccessDecisionVoter
+        用来对Authentication是否有权访问受保护对象进行投票, manager根据投票结果做出最终决策
+            AccessDecisionVoter.vote() 用于投票判定是否有权限
+            实现类:
+                AffirmativeBased

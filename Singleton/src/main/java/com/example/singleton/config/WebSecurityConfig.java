@@ -1,6 +1,7 @@
 package com.example.singleton.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 
@@ -11,5 +12,5 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
  */
 @Configuration // 由于spring boot的自动装配, 不需要@EnableWebSecurity, @WebSecurityConfig
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
+    AccessDecisionVoter
 }
